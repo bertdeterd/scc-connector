@@ -1,6 +1,6 @@
 # SCC-CONNECTOR
 
-A package to be used as express middleware to make a connection to the connectivity service of the SCP with on onpremise SAP backend system.
+A package to be used as express middleware to make a connection to the connectivity service of the Cloud Foundry SCP with the onpremise SAP backend system.
 Axios is used as the http client which can be used in other routes with: **req.axios**
 
 ## Documentation
@@ -16,6 +16,10 @@ This ensures that:
 - a oauth request is made to the connectivity service
 - an access token is being returned
 - global defaults are being set for axios
+
+> In your app you MUST set the env variable  **SAP_SCC_VIRTUAL_HOSTS: '["<your-scc-virtual-host:port>"]'**
+> in the manifest.yml file
+> Only the first virtual host will be recognized
 
 ### Example
 ```
