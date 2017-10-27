@@ -13,9 +13,9 @@ $ npm install --save scc-connector
 
 Before your own api routes insert the middleware **route.use(sccConnector.setup)**
 This ensures that:
-> a oauth request is made to the connectivity service
-> an access token is being returned
-> global defaults are being set for axios
+- a oauth request is made to the connectivity service
+- an access token is being returned
+- global defaults are being set for axios
 
 ### Example
 ```
