@@ -1,12 +1,12 @@
 {
   "name": "scc-connector",
   "version": "1.0.3",
-  "description": "",
+  "description": "SAP Cloud Connector settings",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Bert Deterd",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.17.0",
