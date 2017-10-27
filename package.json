@@ -1,6 +1,6 @@
 {
   "name": "scc-connector",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "SAP Cloud Connector settings",
   "main": "index.js",
   "scripts": {
