@@ -13,12 +13,12 @@ $ npm install --save scc-connector
 
 Before your own api routes insert the middleware **route.use(sccConnector.setup)**
 This ensures that:
-- a oauth request is made to the connectivity service
+- an oauth request is made to the connectivity service
 - an access token is being returned
 - global defaults are being set for axios
 
 > In your app you MUST set the env variable  **SAP_SCC_VIRTUAL_HOSTS: '["<your-scc-virtual-host:port>"]'**
-> in the manifest.yml file
+> in the manifest.yml file.
 > Only the first virtual host will be recognized
 
 ### Example
