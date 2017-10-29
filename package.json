@@ -2,6 +2,14 @@
   "name": "scc-connector",
   "version": "1.1.3",
   "description": "SAP Cloud Connector settings",
+  "keywords":[
+    "SAP",
+    "SAP Cloud Platform",
+    "Cloud Foundry",
+    "SCP",
+    "Connectivity service",
+    "xsuaa"
+  ],
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
