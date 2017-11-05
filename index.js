@@ -26,7 +26,9 @@ function setup(req, res, next) {
             req.axios = axios;
             next();
           })
-          .catch(next);
+          .catch(function(){
+            next('Error');
+          });
       })
       .catch(function() {
         next("Error");
