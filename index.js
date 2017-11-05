@@ -5,28 +5,35 @@ const axios = require("axios");
 module.exports = setup;
 
 function setup(req, res, next) {
-  let host = getHost();
-  axios.defaults.baseURL = "http://" + host;
+  try {
+    let host = getHost();
+    axios.defaults.baseURL = "http://" + host;
 
-  let proxyhost = getProxyHost();
-  axios.default.proxy = proxyhost;
+    let proxyhost = getProxyHost();
+    axios.defaults.proxy = proxyhost;
 
-  getAccessTokenForConnector()
-    .then(data => {
-      axios.defaults.headers.common["SAP-Connectivity-Authentication"] =
-        "Bearer " + data;
+    let connToken = getAccessTokenForConnector();
+    connToken
+      .then(data => {
+        axios.defaults.headers.common["SAP-Connectivity-Authentication"] =
+          "Bearer " + data;
 
-      getAccessTokenForProxy()
-        .then(data => {
-          axios.defaults.headers.common["Proxy-Authorization"] =
-            "Bearer " + data;
+        getAccessTokenForProxy()
+          .then(data => {
+            axios.defaults.headers.common["Proxy-Authorization"] =
+              "Bearer " + data;
 
             req.axios = axios;
             next();
-        })
-        .catch(next);
-    })
-    .catch(next);
+          })
+          .catch(next);
+      })
+      .catch(function() {
+        next("Error");
+      });
+  } catch (e) {
+    next("Error");
+  }
 }
 
 function getProxyHost() {
@@ -94,7 +101,7 @@ function getAccessTokenForProxy(host) {
       "",
       { grant_type: "client_credentials" },
       function(e, access_token, refresh_token, results) {
-        if (e) return reject(e);
+        if (e) reject(e);
         resolve(access_token);
       }
     );
@@ -119,7 +126,7 @@ function getAccessTokenForConnector() {
       "",
       { grant_type: "client_credentials" },
       function(e, access_token, refresh_token, results) {
-        if (e) return reject(e);
+        if (e) reject(e);
         resolve(access_token);
       }
     );
