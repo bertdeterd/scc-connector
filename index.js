@@ -1,18 +1,87 @@
 "use strict";
+const OAuth2 = require("oauth").OAuth2;
+const axios = require("axios");
 
-module.exports = {
-  setup: function(req, res, next) {
-    const OAuth2 = require("oauth").OAuth2;
-    const axios = require("axios");
+module.exports = setup;
 
-    const vcap_services = JSON.parse(process.env.VCAP_SERVICES);
-    const vcap_con = vcap_services["connectivity"][0];
-    const vcap_uaa = vcap_services["xsuaa"][0];
+function setup(req, res, next) {
+  let host = getHost();
+  axios.defaults.baseURL = "http://" + host;
 
-    const virtual_scc_hosts = JSON.parse(process.env.SAP_SCC_VIRTUAL_HOSTS);
-    const virtual_scc_host = virtual_scc_hosts[0];
+  let proxyhost = getProxyHost();
+  axios.default.proxy = proxyhost;
 
-    const oauthcon = new OAuth2(
+  getAccessTokenForConnector()
+    .then(data => {
+      axios.defaults.headers.common["SAP-Connectivity-Authentication"] =
+        "Bearer " + data;
+
+      getAccessTokenForProxy()
+        .then(data => {
+          axios.defaults.headers.common["Proxy-Authorization"] =
+            "Bearer " + data;
+
+            req.axios = axios;
+            next();
+        })
+        .catch(next);
+    })
+    .catch(next);
+}
+
+function getProxyHost() {
+  let vcap_srv = JSON.parse(process.env.VCAP_SERVICES);
+  let vcap_con = vcap_srv["connectivity"][0];
+  return {
+    host: vcap_con.credentials.onpremise_proxy_host,
+    port: vcap_con.credentials.onpremise_proxy_port
+  };
+}
+
+function getHost() {
+  let host = getHostByEnv();
+  if (host == undefined) {
+    host = getHostByUPS();
+  }
+  return host;
+}
+
+function getHostByEnv() {
+  try {
+    let vhosts = JSON.parse(process.env.SAP_SCC_VIRTUAL_HOSTS);
+    vhost = vhosts[0];
+    return vhost;
+  } catch (e) {
+    return undefined;
+  }
+}
+
+function getHostByUPS() {
+  let vcap_srv = JSON.parse(process.env.VCAP_SERVICES);
+  let vcap_ups = vcap_srv["user-provided"];
+  let host = undefined;
+
+  for (var i = 0; i < vcap_ups.length; i++) {
+    let srv = vcap_ups[i];
+    if (
+      srv.credentials.hasOwnProperty("sap_scc_virtual_host") &&
+      srv.credentials.hasOwnProperty("sap_scc_virtual_port")
+    ) {
+      host =
+        srv.credentials.sap_scc_virtual_host +
+        ":" +
+        srv.credentials.sap_scc_virtual_port;
+    }
+  }
+  return host;
+}
+
+function getAccessTokenForProxy(host) {
+  return new Promise(function(resolve, reject) {
+    let vcap_srv = JSON.parse(process.env.VCAP_SERVICES);
+    let vcap_con = vcap_srv["connectivity"][0];
+
+    let oauth = new OAuth2(
       vcap_con.credentials.clientid,
       vcap_con.credentials.clientsecret,
       vcap_con.credentials.url + "/",
@@ -21,7 +90,23 @@ module.exports = {
       null
     );
 
-    const oauthuaa = new OAuth2(
+    oauth.getOAuthAccessToken(
+      "",
+      { grant_type: "client_credentials" },
+      function(e, access_token, refresh_token, results) {
+        if (e) return reject(e);
+        resolve(access_token);
+      }
+    );
+  });
+}
+
+function getAccessTokenForConnector() {
+  return new Promise(function(resolve, reject) {
+    let vcap_srv = JSON.parse(process.env.VCAP_SERVICES);
+    let vcap_uaa = vcap_srv["xsuaa"][0];
+
+    let oauth = new OAuth2(
       vcap_uaa.credentials.clientid,
       vcap_uaa.credentials.clientsecret,
       vcap_uaa.credentials.url + "/",
@@ -30,31 +115,14 @@ module.exports = {
       null
     );
 
-    oauthcon.getOAuthAccessToken(
+    oauth.getOAuthAccessToken(
       "",
       { grant_type: "client_credentials" },
       function(e, access_token, refresh_token, results) {
-        axios.defaults.baseURL = "http://" + virtual_scc_host;
-        axios.defaults.headers.common["Proxy-Authorization"] =
-          "Bearer " + access_token;
-        axios.defaults.proxy = {
-          host: vcap_con.credentials.onpremise_proxy_host,
-          port: vcap_con.credentials.onpremise_proxy_port
-        };
-
-        oauthuaa.getOAuthAccessToken(
-          "",
-          { grant_type: "client_credentials" },
-          function(e, access_token, refresh_token, results) {
-            axios.defaults.headers.common["SAP-Connectivity-Authentication"] =
-              "Bearer " + access_token;
-
-            req.axios = axios;
-            next();
-          }
-        );
-
+        if (e) return reject(e);
+        resolve(access_token);
       }
     );
-  }
-};
+  });
+}
+
