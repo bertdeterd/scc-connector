@@ -1,50 +1,43 @@
 "use strict";
 const OAuth2 = require("oauth").OAuth2;
 const axios = require("axios");
+const xsenv = require("@sap/xsenv");
 
 module.exports = setup;
 
 function setup(req, res, next) {
   try {
+    /**
+     * Get virtual host from env or ups
+     */
     let host = getHost();
     axios.defaults.baseURL = "http://" + host;
 
-    let proxyhost = getProxyHost();
-    axios.defaults.proxy = proxyhost;
-
-    let connToken = getAccessTokenForConnector();
-    connToken
+    /**
+     * Set header SAP-Connectivity-Authentication with usertoken (uaa)
+     */
+    axios.defaults.headers.common["SAP-Connectivity-Authentication"] =
+      "Bearer " + req.authInfo.token;
+     
+    /**
+     * Set header Proxy-Authorization for connectivity service 
+     */
+    const services = xsenv.getServices({connectivity: { tag: "connectivity" } });
+    axios.defaults.proxy = { "host": services.connectivity.onpremise_proxy_host, "port": services.connectivity.onpremise_proxy_port };
+   
+    getAccessTokenForProxy()
       .then(data => {
-        axios.defaults.headers.common["SAP-Connectivity-Authentication"] =
-          "Bearer " + data;
-
-        getAccessTokenForProxy()
-          .then(data => {
-            axios.defaults.headers.common["Proxy-Authorization"] =
-              "Bearer " + data;
-
-            req.axios = axios;
-            next();
-          })
-          .catch(function(){
-            next('Error');
-          });
+        axios.defaults.headers.common["Proxy-Authorization"] = "Bearer " + data;
+        req.axios = axios;
+        next();
       })
       .catch(function() {
         next("Error");
       });
+   
   } catch (e) {
     next("Error");
   }
-}
-
-function getProxyHost() {
-  let vcap_srv = JSON.parse(process.env.VCAP_SERVICES);
-  let vcap_con = vcap_srv["connectivity"][0];
-  return {
-    host: vcap_con.credentials.onpremise_proxy_host,
-    port: vcap_con.credentials.onpremise_proxy_port
-  };
 }
 
 function getHost() {
@@ -109,29 +102,3 @@ function getAccessTokenForProxy(host) {
     );
   });
 }
-
-function getAccessTokenForConnector() {
-  return new Promise(function(resolve, reject) {
-    let vcap_srv = JSON.parse(process.env.VCAP_SERVICES);
-    let vcap_uaa = vcap_srv["xsuaa"][0];
-
-    let oauth = new OAuth2(
-      vcap_uaa.credentials.clientid,
-      vcap_uaa.credentials.clientsecret,
-      vcap_uaa.credentials.url + "/",
-      null,
-      "oauth/token",
-      null
-    );
-
-    oauth.getOAuthAccessToken(
-      "",
-      { grant_type: "client_credentials" },
-      function(e, access_token, refresh_token, results) {
-        if (e) reject(e);
-        resolve(access_token);
-      }
-    );
-  });
-}
-
