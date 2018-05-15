@@ -50,7 +50,7 @@ function getHost() {
 
 function getHostByEnv() {
   try {
-    let vhosts = JSON.parse(process.env.SAP_SCC_VIRTUAL_HOSTS);
+    let vhosts = process.env.SAP_SCC_VIRTUAL_HOSTS;
     vhost = vhosts[0];
     return vhost;
   } catch (e) {
