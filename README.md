@@ -11,7 +11,7 @@ $ npm install --save scc-connector
 
 ## Usage
 
-Before your own api routes insert the middleware **route.use(sccConnector.setup)**
+Before your own api routes insert the middleware **route.use(sccConnector)**
 This ensures that:
 - an oauth request is made to the connectivity service
 - an access token is being returned
