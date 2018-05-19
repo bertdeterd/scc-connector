@@ -3,7 +3,10 @@ const OAuth2 = require("oauth").OAuth2;
 const axios = require("axios");
 const xsenv = require("@sap/xsenv");
 
+
 module.exports = setup;
+
+ 
 
 function setup(req, res, next) {
   try {
@@ -50,7 +53,7 @@ function getHost() {
 
 function getHostByEnv() {
   try {
-    let vhosts = process.env.SAP_SCC_VIRTUAL_HOSTS;
+    let vhosts = JSON.parse( process.env.SAP_SCC_VIRTUAL_HOSTS );
     vhost = vhosts[0];
     return vhost;
   } catch (e) {
@@ -92,7 +95,7 @@ function getAccessTokenForProxy(host) {
       null
     );
 
-    oauth.getOAuthAccessToken(
+     oauth.getOAuthAccessToken(
       "",
       { grant_type: "client_credentials" },
       function(e, access_token, refresh_token, results) {
